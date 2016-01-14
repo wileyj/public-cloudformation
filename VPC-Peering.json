@@ -1,0 +1,229 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Peering VPC Stack",
+
+    "Parameters": {
+
+        "Domain": {
+            "Type": "String",
+            "Description": "Domain",
+            "Default": "test.com"
+        },
+
+        "ServiceVPCid": {
+            "Type": "String",
+            "Description": "ServiceVPCid"
+        },
+
+        "AppVPCid": {
+            "Type": "String",
+            "Description": "AppVPCid"
+        },
+
+        "DBVPCid": {
+            "Type": "String",
+            "Description": "DBVPCid"
+        },
+        
+        "DBRoutePublic":{
+            "Type": "String",
+            "Description": "DBRoutePublic"
+        },
+
+        "DBRoutePrivate":{
+            "Type": "String",
+            "Description": "DBRoutePrivate"
+        },
+
+        "ServiceRoutePrivate":{
+            "Type": "String",
+            "Description": "ServiceRoutePrivate"
+        },
+
+        "ServiceRoutePublic":{
+            "Type": "String",
+            "Description": "ServiceRoutePublic"
+        },
+
+        "AppRoutePrivate1":{
+            "Type": "String",
+            "Description": "AppRoutePrivate1"
+        },
+
+        "AppRoutePrivate2":{
+            "Type": "String",
+            "Description": "AppRoutePrivate2"
+        },
+
+        "AppRoutePublic1":{
+            "Type": "String",
+            "Description": "AppRoutePublic1"
+        },
+
+        "AppRoutePublic2":{
+            "Type": "String",
+            "Description": "AppRoutePublic2"
+        }
+    },
+
+   "Mappings": {
+
+        "SubnetConfig" : {
+            "us-east-1" : {
+                "ServiceVPC":       "10.20.0.0/16",
+                "ServicePublic":    "10.20.0.0/23",
+                "ServicePrivate":   "10.20.100.0/23",
+                "DBVPC" :           "10.100.0.0/16",
+                "DBPublic" :        "10.100.0.0/23",
+                "DBPrivate" :       "10.100.100.0/23",
+                "VPC" :             "10.0.0.0/16",
+                "Public1" :         "10.0.0.0/23",
+                "Public2" :         "10.0.2.0/23",
+                "Private1" :        "10.0.100.0/23",
+                "Private2" :        "10.0.102.0/23"
+            },
+            "us-west-1" : {
+                "VPC" :             "10.1.0.0/16",
+                "Public1" :         "10.1.0.0/23",
+                "Public2" :         "10.1.2.0/23",
+                "Private1" :        "10.1.100.0/23",
+                "Private2" :        "10.1.102.0/23"
+            },
+            "us-west-2" : {
+                "ServiceVPC":       "10.23.0.0/16",
+                "ServicePublic":    "10.23.0.0/23",
+                "ServicePrivate":   "10.23.100.0/23",
+                "DBVPC" :           "10.103.0.0/16",
+                "DBPublic" :        "10.103.0.0/23",
+                "DBPrivate" :       "10.103.100.0/23",
+                "VPC" :             "10.3.0.0/16",
+                "Public1" :         "10.3.0.0/23",
+                "Public2" :         "10.3.2.0/23",
+                "Private1" :        "10.3.100.0/23",
+                "Private2" :        "10.3.102.0/23"
+            },
+            "ap-southeast-1" : {
+                "VPC" :             "10.2.0.0/16",
+                "Public1" :         "10.2.0.0/23",
+                "Public2" :         "10.2.2.0/23",
+                "Private1" :        "10.2.100.0/23",
+                "Private2" :        "10.2.102.0/23"
+            }
+        }
+    },
+
+    "Resources": {
+
+        "ServicePeeringConnection": {
+            "Type": "AWS::EC2::VPCPeeringConnection",
+            "Properties": {
+                "VpcId": {"Ref": "ServiceVPCid"},
+                "PeerVpcId": {"Ref": "AppVPCid"},
+                "Tags":[{
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : "live"
+                }, {
+                    "Key" : "Region",
+                    "Value" : { "Ref": "AWS::Region" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                }]     
+            }
+        },
+
+        "PeeringConnectionRoute1" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "DestinationCidrBlock" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "VPC" ] },
+                "VpcPeeringConnectionId" : { "Ref" : "ServicePeeringConnection" },
+                "RouteTableId" : {"Ref": "ServiceRoutePrivate"}
+            }
+        },
+
+        "PeeringConnectionRoute2" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "DestinationCidrBlock" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "VPC" ] },
+                "VpcPeeringConnectionId" : { "Ref" : "ServicePeeringConnection" },
+                "RouteTableId" : {"Ref": "ServiceRoutePublic"}
+            }
+        },
+
+        "PeeringConnectionRoute3" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "DestinationCidrBlock" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "DBVPC" ] },
+                "VpcPeeringConnectionId" : { "Ref" : "ServicePeeringConnection" },
+                "RouteTableId" : {"Ref": "ServiceRoutePrivate"}
+            }
+        },
+
+        "PeeringConnectionRoute4" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "DestinationCidrBlock" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "DBVPC" ] },
+                "VpcPeeringConnectionId" : { "Ref" : "ServicePeeringConnection" },
+                "RouteTableId" : {"Ref": "ServiceRoutePublic"}
+            }
+        },
+
+        "PeeringConnectionRoute5" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "DestinationCidrBlock" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "ServiceVPC" ] },
+                "VpcPeeringConnectionId" : { "Ref" : "ServicePeeringConnection" },
+                "RouteTableId" : {"Ref": "AppRoutePublic1"}
+            }
+        },
+
+        "PeeringConnectionRoute6" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "DestinationCidrBlock" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "ServiceVPC" ] },
+                "VpcPeeringConnectionId" : { "Ref" : "ServicePeeringConnection" },
+                "RouteTableId" : {"Ref": "AppRoutePrivate1"}
+            }
+        },
+
+        "PeeringConnectionRoute7" : {
+            "Type" : "AWS::EC2::Route",
+            "Properties" : {
+                "DestinationCidrBlock" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "ServiceVPC" ] },
+                "VpcPeeringConnectionId" : { "Ref" : "ServicePeeringConnection" },
+                "RouteTableId" : {"Ref": "AppRoutePrivate2"}
+            }
+        }
+    },
+
+    "Outputs": {
+
+        "Stack": {
+            "Description": "Stack",
+            "Value" : { "Ref": "AWS::StackId" }
+        },
+
+        "ServiceVPCid": {
+            "Description": "String",
+            "Value" : "ServiceVPCid"
+        },
+
+        "AppVPCid": {
+            "Description": "String",
+            "Value" : "AppVPCid"
+        },
+
+        "DBVPCid": {
+            "Description": "String",
+            "Value" : "DBVPCid"
+        },
+
+        "Domain": {
+            "Description": "Domain",
+            "Value" : {"Ref":"Domain"}
+        }
+    }
+}

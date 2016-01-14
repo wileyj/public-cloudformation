@@ -1,0 +1,22 @@
+[{
+    "ParameterKey"   : "BastionInstanceProfile",
+    "ParameterValue" : "Bastion"
+},{
+    "ParameterKey"   : "NatInstanceProfile",
+    "ParameterValue" : "Nat"
+},{
+    "ParameterKey"   : "BastionInstanceType",
+    "ParameterValue" : "m3.medium"
+},{
+    "ParameterKey"   : "NatInstanceType",
+    "ParameterValue" : "m4.large"
+},{
+    "ParameterKey"   : "KeyName",
+    "ParameterValue" : "key"
+},{
+    "ParameterKey"   : "Environment",
+    "ParameterValue" : "prod"
+},{
+    "ParameterKey"   : "Domain",
+    "ParameterValue" : "test.com"
+}]

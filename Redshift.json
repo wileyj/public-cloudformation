@@ -1,0 +1,244 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "Redshift VPC",
+    "Parameters" : {
+        "VPCName": {
+            "Type" : "String",
+            "Description" : "VPC Name",
+            "Default" : "service"
+        },
+
+        "Environment": {
+            "Type": "String",
+            "Description": "Environment",
+            "Default" : "prod"
+        },
+
+        "Domain": {
+            "Type" : "String",
+            "Description" : "Name of the Domain",
+            "Default" : "test.com"
+        },
+
+        "VPCid" : {
+            "Type" : "String",
+            "Description": "VPC ID",
+            "Default": "vpc-xxxxxx"
+        },
+
+        "MaintWindow" :{
+            "Description" : "UTC date of preferred maintenance window",
+            "Type": "String",
+            "Default" : "mon:08:30-mon:09:00"
+        }, 
+        
+        "PublicSubnet" :{
+            "Description" : "PublicSubnet",
+            "Type" : "String"
+        },
+
+        "AllowRedshiftUpgrade":{
+            "Description" : "Boolean to allow redshift upgrades during maintenance window",
+            "Type" : "String",
+            "Default": "true"
+        },
+
+        "DatabaseName" : {
+            "Description" : "The name of the first database to be created when the cluster is created",
+            "Type" : "String",
+            "Default" : "test"
+        },
+
+        "ClusterType" : {
+            "Description" : "The type of cluster",
+            "Type" : "String",
+            "AllowedValues" : [ "single-node", "multi-node" ],
+            "Default": "multi-node"
+        },
+
+        "NumberOfNodes" : {
+            "Description" : "The number of compute nodes in the cluster. For multi-node clusters, the NumberOfNodes parameter must be greater than 1",
+            "Type" : "Number",
+            "Default": "3"
+        },
+
+        "NodeType" : {
+            "Description" : "The type of node to be provisioned",
+            "Type" : "String",
+            "AllowedValues" : [ "ds1.xlarge", "ds1.8xlarge", "ds2.xlarge", "ds2.8xlarge", "dc1.xlarge", "dc1.8xlarge" ],
+            "Default": "ds2.xlarge"
+        }, 
+
+        "MasterUsername" : {
+            "Description" : "The user name that is associated with the master user account for the cluster that is being created",
+            "Type" : "String",
+            "Default": "root"
+        },
+
+        "MasterUserPassword" :  {
+            "Description" : "The password that is associated with the master user account for the cluster that is being created.",
+            "Type" : "String",
+            "NoEcho" : "true",
+            "Default": "password"
+        },
+
+        "InboundTraffic" : {
+            "Description" : "Allow inbound traffic to the cluster from this CIDR range.",
+            "Type" : "String",
+            "Default" : "1.1.1.1/32"
+        },
+
+        "PortNumber" : {
+            "Description" : "The port number on which the cluster accepts incoming connections.",
+            "Type" : "Number",
+            "Default" : "5439"
+        }
+    },
+
+    "Conditions" : {
+        "IsMultiNodeCluster" : { "Fn::Equals" : [{ "Ref" : "ClusterType" }, "multi-node" ]}
+    },
+
+    "Resources" : {
+        "RedshiftSecurityGroup" : {
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : { "Fn::Join" : ["-", [ {"Ref": "VPCName" }, { "Ref" : "AWS::Region" }, { "Ref" : "Environment" }, "Redshift DB" ]]},
+                "VpcId" : { "Ref" : "VPCid" },
+                "SecurityGroupIngress" : [{
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "22",
+                    "ToPort" : "22",
+                    "CidrIp" : { "Ref": "InboundTraffic" }
+                }],
+                "Tags": [{ 
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Name",
+                    "Value" : { "Fn::Join" : ["-", [ {"Ref": "VPCName" }, { "Ref" : "AWS::Region" }, { "Ref" : "Environment" }, "Redshift DB" ]]}
+                }, {
+                    "Key" : "VPCid",
+                    "Value" : {"Ref": "VPCid"}
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "Region",
+                    "Value" : { "Ref": "AWS::Region" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                }]
+            }
+        },
+        "RedshiftICMPSecurityGroup" : {
+            "DependsOn" : ["RedshiftSecurityGroup"],
+            "Type": "AWS::EC2::SecurityGroupIngress",
+            "Properties": {
+                "GroupId": { "Ref": "RedshiftSecurityGroup" },
+                "IpProtocol" : "icmp",
+                "FromPort": "-1",
+                "ToPort": "-1",
+                "CidrIp" : { "Ref": "InboundTraffic" }           
+            }
+        },
+        "RedshiftDBSecurityGroup" : {
+            "DependsOn" : ["RedshiftSecurityGroup"],
+            "Type": "AWS::EC2::SecurityGroupIngress",
+            "Properties": {
+                "GroupId": { "Ref": "RedshiftSecurityGroup" },
+                "IpProtocol" : "tcp",
+                "FromPort": {"Ref": "PortNumber"},
+                "ToPort": {"Ref": "PortNumber"},
+                "CidrIp" : { "Ref": "InboundTraffic" }        
+            }
+        },
+        "RedshiftCluster" : {
+            "Type" : "AWS::Redshift::Cluster",
+            "Properties" : {
+                "AllowVersionUpgrade": "true",
+                "ClusterType" : { "Ref" : "ClusterType" },
+                "NumberOfNodes" : { "Fn::If" : [ "IsMultiNodeCluster",  { "Ref" : "NumberOfNodes" }, { "Ref" : "AWS::NoValue" }]},
+                "NodeType" : { "Ref" : "NodeType" },
+                "DBName" : { "Ref" : "DatabaseName" },
+                "MasterUsername" : { "Ref" : "MasterUsername" },
+                "MasterUserPassword" : { "Ref" : "MasterUserPassword" },               
+                "ClusterParameterGroupName" : { "Ref" : "RedshiftClusterParameterGroup" },
+                "VpcSecurityGroupIds" : [ { "Ref" : "RedshiftSecurityGroup" } ],
+                "ClusterSubnetGroupName" : { "Ref" : "RedshiftClusterSubnetGroup" },
+                "PubliclyAccessible" : "true",
+                "Port" : { "Ref" : "PortNumber" },
+                "AllowVersionUpgrade":  {"Ref": "AllowRedshiftUpgrade"},
+                "PreferredMaintenanceWindow": {"Ref": "MaintWindow"}
+            }
+        },
+        "RedshiftClusterParameterGroup" : {
+            "Type" : "AWS::Redshift::ClusterParameterGroup",
+            "Properties" : {
+                "Description" : "Redshift Cluster parameter group",
+                "ParameterGroupFamily" : "redshift-1.0",
+                "Parameters" : [{
+                    "ParameterName" : "enable_user_activity_logging",
+                    "ParameterValue" : "true"
+                }]
+            }
+        },
+        "RedshiftClusterSubnetGroup" : {
+            "Type" : "AWS::Redshift::ClusterSubnetGroup",
+            "Properties" : {
+                "Description" : "Cluster subnet group",
+                "SubnetIds" : [ { "Ref" : "PublicSubnet" } ]
+            }
+        },
+        "WaitHandle" : {
+            "Type" : "AWS::CloudFormation::WaitConditionHandle"
+        }
+    },
+
+    "Outputs" : {
+
+        "Stack": {
+            "Description": "Stack",
+            "Value" : { "Ref": "AWS::StackId" }
+        },
+
+        "ClusterEndpoint" : {
+            "Description" : "Cluster endpoint",
+            "Value" : { "Fn::Join" : [ ":", [ { "Fn::GetAtt" : [ "RedshiftCluster", "Endpoint.Address" ] }, { "Fn::GetAtt" : [ "RedshiftCluster", "Endpoint.Port" ] } ] ] }
+        },
+    
+        "ClusterName" : {
+            "Description" : "Name of cluster",
+            "Value" : { "Ref" : "RedshiftCluster" }
+        },
+
+        "ParameterGroupName" : {
+            "Description" : "Name of parameter group",
+            "Value" : { "Ref" : "RedshiftClusterParameterGroup" }
+        },
+
+        "RedshiftClusterSubnetGroupName" : {
+            "Description" : "Name of cluster subnet group",
+            "Value" : { "Ref" : "RedshiftClusterSubnetGroup" }
+        },
+
+        "RedshiftClusterSecurityGroupID" : {
+            "Description" : "Name of cluster security group",
+            "Value" : { "Ref" : "RedshiftSecurityGroup" }
+        },
+
+        "VPCName": {
+            "Description": "VPC Name", 
+            "Value": {"Ref": "VPCName"}
+        },
+
+        "VPCid": {
+            "Description": "VPC ID",
+            "Value": {"Ref": "VPCid"}
+        }       
+    }
+}

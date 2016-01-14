@@ -1,0 +1,829 @@
+{
+    "AWSTemplateFormatVersion": "2010-09-09",
+    "Description": "VPC for Application Assets",
+    "Parameters" : {
+
+        "NatInstanceProfile": {
+            "Type" : "String",
+            "Description" : "NatInstanceProfile",
+            "Default": "Nat"
+        },
+
+        "BastionInstanceProfile": {
+            "Type" : "String",
+            "Description" : "BastionInstanceProfile",
+            "Default": "Bastion"
+        },
+
+        "BastionInstanceType": {
+            "Type" : "String",
+            "Description" : "BastionInstanceType",
+            "AllowedValues": [ "m3.medium", "m4.large" ],
+            "Default" : "m3.medium"
+        },
+
+        "NatInstanceType": {
+            "Type" : "String",
+            "Description" : "NatInstanceType",
+            "AllowedValues": [ "m3.medium", "m4.large" ],
+            "Default" : "m4.large"
+        },
+
+        "KeyName": {
+            "Type" : "String",
+            "Description" : "KeyName",
+            "Default" : "key"
+        },
+
+        "VPCName": {
+            "Type" : "String",
+            "Description" : "VPC Name",
+            "Default" : "App"
+        },
+
+        "Environment": {
+            "Type": "String",
+            "Description": "Environment",
+            "Default" : "prod"
+        },
+
+        "Domain": {
+            "Type" : "String",
+            "Description" : "Name of the Domain",
+            "Default" : "test.com"
+        }
+    },
+
+    "Mappings": {
+        "AWSRegionArch2AMI": {
+            "us-east-1" : { 
+                "minhvm"        : "ami-fbb9c991", 
+                "minpv"         : "ami-93b7c7f9", 
+                "nathvm"        : "ami-68115b02", 
+                "natpv"         : "ami-c02b04a8",
+                "hvmgp2"        : "ami-60b6c60a", 
+                "hvmebs"        : "ami-40b7c72a", 
+                "pvebs"         : "ami-5fb8c835",
+                "pvinstance"    : "ami-30b6c65a",
+                "shortregion"   : "use1" 
+            }
+        },
+
+        "AWSInstanceType2Arch" : {
+            "m3.medium" : {   "bastion" : "minpv", "nat": "natpv"    },
+            "m4.large" :  {   "bastion": "minhvm", "nat" : "nathvm"  }
+        },
+        
+        "SubnetConfig" : {
+            "us-east-1" : {
+                "VPC" :         "10.100.0.0/16",
+                "Public1" :     "10.100.0.0/23",
+                "Public2" :     "10.100.2.0/23",
+                "Private1" :    "10.100.100.0/23",
+                "Private2" :    "10.100.102.0/23"
+            }
+        },
+
+        "RegionToVpc" : {
+            "us-east-1" : {
+                "AvailabilityZone1" : "us-east-1a",
+                "AvailabilityZone2" : "us-east-1d"
+            },
+            "us-west-1" : {
+                "AvailabilityZone1" : "us-west-1b",
+                "AvailabilityZone2" : "us-west-1c"
+            },
+            "us-west-2" : {
+                "AvailabilityZone1" : "us-west-2b",
+                "AvailabilityZone2" : "us-west-2c"
+            },
+            "ap-southeast-1" : {
+                "AvailabilityZone1" : "ap-southeast-1a",
+                "AvailabilityZone2" : "ap-southeast-1d"
+            }
+        }
+    },
+
+    "Resources" : {
+        "VPC": {
+            "Type": "AWS::EC2::VPC",
+            "Properties": {
+                "CidrBlock": { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "VPC" ] },
+                "EnableDnsSupport" : "True",
+                "EnableDnsHostnames" : "True",
+                "Tags": [{
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Name",
+                    "Value" :  { "Ref" : "VPCName" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                }]
+            }
+        }, 
+    
+        "AttachGateway": {
+            "Type": "AWS::EC2::VPCGatewayAttachment",
+            "DependsOn": ["InternetGateway"], 
+            "Properties": {
+                "InternetGatewayId": {"Ref": "InternetGateway"}, 
+                "VpcId": {"Ref": "VPC"}
+            } 
+        },
+
+        "InternetGateway": {
+            "Type": "AWS::EC2::InternetGateway",
+            "Properties" :{
+                "Tags": [{ 
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Name",
+                    "Value" : { "Ref" : "VPCName" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                }]
+            }
+        },
+
+        "PublicRoute1": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn": [ "InternetGateway", "PublicRouteTable1"] ,
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0", 
+                "GatewayId": {"Ref": "InternetGateway"}, 
+                "RouteTableId": {"Ref": "PublicRouteTable1"}
+            }
+        }, 
+
+        "PublicRoute2": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn": ["InternetGateway", "PublicRouteTable2"],
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0", 
+                "GatewayId": {"Ref": "InternetGateway"}, 
+                "RouteTableId": {"Ref": "PublicRouteTable2"}
+            }
+        },
+
+        "PrivateRoute1": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn" : ["InternetGateway", "PrivateRouteTable1"],
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0", 
+                "InstanceId": {"Ref": "NatInstance1"}, 
+                "RouteTableId": {"Ref": "PrivateRouteTable1"}
+            }
+        }, 
+    
+        "PrivateRoute2": {
+            "Type": "AWS::EC2::Route",
+            "DependsOn" : ["InternetGateway", "PrivateRouteTable2"],
+            "Properties": {
+                "DestinationCidrBlock": "0.0.0.0/0", 
+                "InstanceId": {"Ref": "NatInstance2"}, 
+                "RouteTableId": {"Ref": "PrivateRouteTable2"}
+            }
+        }, 
+    
+        "PrivateRouteTable1": {
+            "Type": "AWS::EC2::RouteTable",
+            "DependsOn" : ["VPC"],
+            "Properties": {
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [{
+                    "Key" : "Name",
+                    "Value": { "Fn::Join" : ["-", [ { "Ref": "VPCName" }, "Private", "1"]]}
+                }, {
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                },{
+                    "Key" : "Subnet",
+                    "Value" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Private1" ] }
+                }]
+            }
+        },
+
+        "PrivateRouteTable2": {
+            "Type": "AWS::EC2::RouteTable",
+            "DependsOn" : ["VPC"],
+            "Properties": {
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [{
+                    "Key" : "Name",
+                    "Value": { "Fn::Join" : ["-", [ { "Ref": "VPCName" }, "Private", "2"]]}
+                }, {
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                 }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                },{
+                    "Key" : "Subnet",
+                    "Value" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Private2" ] }
+                }]
+            }
+        },
+
+        "PublicRouteTable1": {
+            "Type": "AWS::EC2::RouteTable",
+            "DependsOn" : ["VPC"],
+            "Properties": {
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [{
+                    "Key" : "Name",
+                    "Value": { "Fn::Join" : ["-", [ { "Ref": "VPCName" }, "Public", "1"]]}
+                }, {
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                },{
+                    "Key" : "Subnet",
+                    "Value" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Public1" ] }
+                }]
+            } 
+        },
+
+        "PublicRouteTable2": {
+            "Type": "AWS::EC2::RouteTable",
+            "DependsOn" : ["VPC"],
+            "Properties": {
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [{
+                    "Key" : "Name",
+                    "Value": { "Fn::Join" : ["-", [ { "Ref": "VPCName" }, "Public", "2"]]}
+                }, {
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                },{
+                    "Key" : "Subnet",
+                    "Value" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Public2" ] }
+                }]
+            } 
+        },
+
+        "PrivateSubnetRouteTableAssociation1": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "DependsOn": ["PrivateRouteTable1"],
+            "Properties": {
+                "RouteTableId": {"Ref": "PrivateRouteTable1"}, 
+                "SubnetId": {"Ref": "PrivateSubnet1"}
+            }
+        },
+
+        "PrivateSubnetRouteTableAssociation2": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "DependsOn": ["PrivateRouteTable2"],
+            "Properties": {
+                "RouteTableId": {"Ref": "PrivateRouteTable2"}, 
+                "SubnetId": {"Ref": "PrivateSubnet2"}
+            }
+        }, 
+
+        "PublicSubnetRouteTableAssociation1": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "DependsOn": ["PublicRouteTable1"],
+            "Properties": {
+                "RouteTableId": {"Ref": "PublicRouteTable1"}, 
+                "SubnetId": {"Ref": "PublicSubnet1"}
+            }
+        }, 
+    
+        "PublicSubnetRouteTableAssociation2": {
+            "Type": "AWS::EC2::SubnetRouteTableAssociation",
+            "DependsOn": ["PublicRouteTable2"],
+            "Properties": {
+                "RouteTableId": {"Ref": "PublicRouteTable2"}, 
+                "SubnetId": {"Ref": "PublicSubnet2"}
+            } 
+        }, 
+
+        "PrivateSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone" : { "Fn::FindInMap": [ "RegionToVpc", { "Ref" : "AWS::Region" }, "AvailabilityZone1"] }, 
+                "CidrBlock": { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Private1" ] }, 
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [{
+                    "Key" : "Name",
+                    "Value": { "Fn::Join" : ["-", [ { "Ref": "VPCName" }, "Private", "1"]]}
+                }, {
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                },{
+                    "Key" : "Subnet",
+                    "Value" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Private1" ] }
+                }]
+            }
+        },
+
+        "PrivateSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone" : { "Fn::FindInMap": [ "RegionToVpc", { "Ref" : "AWS::Region" }, "AvailabilityZone2"] }, 
+                "CidrBlock": { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Private2" ] }, 
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [{
+                    "Key" : "Name",
+                    "Value": { "Fn::Join" : ["-", [ { "Ref": "VPCName" }, "Private", "2"]]}
+                }, {
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                },{
+                    "Key" : "Subnet",
+                    "Value" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Private2" ] }
+                }]
+            }
+        }, 
+
+        "PublicSubnet1": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": { "Fn::FindInMap": [ "RegionToVpc", { "Ref" : "AWS::Region" }, "AvailabilityZone1"] }, 
+                "CidrBlock": { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Public1" ] }, 
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [{
+                    "Key" : "Name",
+                    "Value": { "Fn::Join" : ["-", [ { "Ref": "VPCName" }, "Public", "1"]]}
+                }, {
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                },{
+                    "Key" : "Subnet",
+                    "Value" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Public1" ] }
+                }]
+            }
+        }, 
+
+        "PublicSubnet2": {
+            "Type": "AWS::EC2::Subnet",
+            "Properties": {
+                "AvailabilityZone": { "Fn::FindInMap": [ "RegionToVpc", { "Ref" : "AWS::Region" }, "AvailabilityZone2"] }, 
+                "CidrBlock": { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Public2" ] }, 
+                "VpcId": {"Ref": "VPC"},
+                "Tags": [{
+                    "Key" : "Name",
+                    "Value": { "Fn::Join" : ["-", [ { "Ref": "VPCName" }, "Public", "2"]]}
+                }, {
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                },{
+                    "Key" : "Subnet",
+                    "Value" : { "Fn::FindInMap": [ "SubnetConfig", { "Ref" : "AWS::Region" }, "Public2" ] }
+                }]
+            }
+        },
+
+        "InternalSecurityGroup": {
+            "DependsOn" : ["VPC"],
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": "Internal-Traffic",
+                "GroupName" : "Internal-Traffic",
+                "SourceSecurityGroupName" : "Internal-Traffic",
+                "VpcId": {"Ref": "VPC"},
+                "SecurityGroupIngress": [{ 
+                    "IpProtocol" : "-1",
+                    "CidrIp": "10.0.0.0/16"
+                },{
+                    "IpProtocol" : "-1",
+                    "CidrIp": "10.20.0.0/16"
+                },{
+                    "IpProtocol" : "-1",
+                    "CidrIp": "10.100.0.0/16"
+                }],
+                "Tags": [{ 
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Name",
+                    "Value" : "Internal-Traffic"
+                  }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }]
+            }
+        },
+
+        "BastionSecurityGroup": {
+            "DependsOn" : ["VPC"],
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": { "Fn::Join" : ["-", [ { "Ref" : "VPCName" }, "Bastion" ]]}, 
+                "GroupName" : { "Fn::Join" : ["-", [ { "Ref" : "VPCName" }, "Nat" ]]}, 
+                "SourceSecurityGroupName" : { "Fn::Join" : ["-", [ { "Ref" : "VPCName" }, "Bastion" ]]}, 
+                "VpcId": {"Ref": "VPC"},
+                "SecurityGroupIngress": [{ 
+                    "IpProtocol" : "tcp",
+                    "FromPort": "22",  
+                    "ToPort": "22",
+                    "CidrIp": "0.0.0.0/0"
+                },{
+                    "IpProtocol": "icmp",
+                    "FromPort": "-1",
+                    "ToPort": "-1",
+                    "CidrIp" : { "Fn::FindInMap": [ "SubnetConfig", {"Ref": "AWS::Region"}, "VPC" ] } 
+                }],
+                "Tags": [{ 
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Name",
+                    "Value" : { "Fn::Join" : ["-", [ { "Ref": "VPCName" }, "Bastion"]]}
+                  }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                },{
+                    "Key" : "Region",
+                    "Value" : { "Ref": "AWS::Region" }
+                }]
+            }
+        }, 
+
+        "NatSecurityGroup" : {
+            "DependsOn" : ["VPC"],
+            "Type" : "AWS::EC2::SecurityGroup",
+            "Properties" : {
+                "GroupDescription" : { "Fn::Join" : ["-", [ { "Ref" : "VPCName" }, "Nat" ]]}, 
+                "GroupName" : { "Fn::Join" : ["-", [ { "Ref" : "VPCName" }, "Nat" ]]}, 
+                "SourceSecurityGroupName" : { "Fn::Join" : ["-", [ { "Ref" : "VPCName" }, "Nat" ]]}, 
+                "VpcId" : { "Ref" : "VPC" },
+                "SecurityGroupIngress" : [{
+                    "IpProtocol" : "tcp",
+                    "FromPort" : "0",
+                    "ToPort" : "65535",
+                    "CidrIp" : { "Fn::FindInMap": [ "SubnetConfig", {"Ref": "AWS::Region"}, "VPC" ] } 
+                }, {
+                    "IpProtocol" : "udp",
+                    "FromPort" : "0",
+                    "ToPort" : "65535",
+                    "CidrIp" : { "Fn::FindInMap": [ "SubnetConfig", {"Ref": "AWS::Region"}, "VPC" ] } 
+                },{
+                    "IpProtocol": "icmp",
+                    "FromPort": "-1",
+                    "ToPort": "-1",
+                    "CidrIp" : { "Fn::FindInMap": [ "SubnetConfig", {"Ref": "AWS::Region"}, "VPC" ] } 
+                }],
+                "Tags": [{ 
+                    "Key" : "Stack",
+                    "Value" : { "Ref": "AWS::StackId" }
+                }, {
+                    "Key" : "Name",
+                    "Value" : { "Fn::Join" : ["-", [ { "Ref" : "VPCName" }, "Nat" ]]}
+                 }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                },{
+                    "Key" : "Region",
+                    "Value" : { "Ref": "AWS::Region" }
+                }]
+            }
+        },
+
+        "BastionInstance": {
+            "Type": "AWS::EC2::Instance",
+            "DependsOn": ["InternetGateway", "BastionSecurityGroup"], 
+            "Properties": {
+                "ImageId": { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref": "AWS::Region" }, { "Fn::FindInMap": [ "AWSInstanceType2Arch", { "Ref": "BastionInstanceType" }, "bastion" ] } ] }, 
+                "InstanceType": {"Ref": "BastionInstanceType"}, 
+                "KeyName": {"Ref": "KeyName"}, 
+                "SourceDestCheck" : "True",
+                "DisableApiTermination" : "False",
+                "InstanceInitiatedShutdownBehavior": "stop",
+                "Monitoring": "True",
+                "IamInstanceProfile" : {"Ref": "BastionInstanceProfile" },
+                "NetworkInterfaces" : [{
+                    "GroupSet"                 : [{ "Ref" : "BastionSecurityGroup" } ],
+                    "AssociatePublicIpAddress" : "true",
+                    "DeviceIndex"              : "0",
+                    "DeleteOnTermination"      : "true",
+                    "SubnetId"                 : { "Ref" : "PublicSubnet1" }
+                }],
+                "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+                    "#!/bin/bash -v", "\n",
+                    "# install base packages", "\n",
+                    "yum install -y python27-pip.noarch python27-botocore.noarch aws-cli.noarch aws-apitools-common.noarch yum-plugin-priorities.noarch openssh-clients", "\n",
+                    "# update the system to latest and greatest", "\n",
+                    "yum update -y ", "\n",
+                    "# install python modules", "\n",
+                    "pip install boto3 amqp  anyjson  backports.ssl-match-hostname  billiard  docopt jedi jmespath  kombu  prompt-toolkit  ptpython python-dateutil  six", "\n",
+                    "# set the hostname", "\n",                    
+                    "hostname ", { "Fn::Join" : [".", [ "shared-bastion-001", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]}, "\n",
+                    "sed -i -e 's/HOSTNAME=localhost.localdomain/HOSTNAME=", { "Fn::Join" : [".", [ "shared-bastion-001", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]}, "/' /etc/sysconfig/network\n",
+                    "# Helper function\n",
+                    "function error_exit\n",
+                    "{\n",
+                    "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WaitHandle" }, "'\n",
+                    "  exit 1\n",
+                    "}\n",
+                    "# All is well so signal success\n",
+                    "/opt/aws/bin/cfn-signal -e 0 -r \"Setup complete\" '", { "Ref" : "WaitHandle" }, "'\n"
+                ]]}},
+                "Tags": [{ 
+                    "Key" : "Name",
+                    "Value" : { "Fn::Join" : [".", [ "shared-bastion-001", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]}
+                }, {
+                    "Key" : "Region",
+                    "Value" : { "Ref" : "AWS::Region" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                 }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                }]
+            } 
+        },
+
+        "NatInstance1": {
+            "Type": "AWS::EC2::Instance",
+            "DependsOn": ["InternetGateway", "NatSecurityGroup" ], 
+            "Properties": {
+                "ImageId": { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref": "AWS::Region" }, { "Fn::FindInMap": [ "AWSInstanceType2Arch", { "Ref": "NatInstanceType" }, "nat" ] } ] }, 
+                "InstanceType": {"Ref": "NatInstanceType"}, 
+                "KeyName": {"Ref": "KeyName"}, 
+                "SourceDestCheck" : "False",
+                "DisableApiTermination" : "False",
+                "InstanceInitiatedShutdownBehavior": "stop",
+                "Monitoring": "True",
+                "IamInstanceProfile" : {"Ref": "NatInstanceProfile" },
+                "NetworkInterfaces" : [{
+                    "GroupSet"                 : [{ "Ref" : "NatSecurityGroup" }],
+                    "AssociatePublicIpAddress" : "true",
+                    "DeviceIndex"              : "0",
+                    "DeleteOnTermination"      : "true",
+                    "SubnetId"                 : { "Ref" : "PublicSubnet1" }
+                }],
+                "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+                    "#!/bin/bash -v", "\n",
+                    "# install base packages", "\n",
+                    "yum install -y python27-pip.noarch python27-botocore.noarch aws-cli.noarch aws-apitools-common.noarch yum-plugin-priorities.noarch openssh-clients", "\n",
+                    "# update the system to latest and greatest", "\n",
+                    "yum update -y ", "\n",
+                    "# install python modules", "\n",
+                    "pip install boto3 amqp  anyjson  backports.ssl-match-hostname  billiard  docopt jedi jmespath  kombu  prompt-toolkit  ptpython python-dateutil  six", "\n",
+                    "# set the hostname", "\n",                    
+                    "hostname ", { "Fn::Join" : [".", [ "platform-nat-001", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]}, "\n",
+                    "sed -i -e 's/HOSTNAME=localhost.localdomain/HOSTNAME=", { "Fn::Join" : [".", [ "platform-nat-001", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]}, "/' /etc/sysconfig/network\n",
+                    "# Helper function\n",
+                    "function error_exit\n",
+                    "{\n",
+                    "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WaitHandle" }, "'\n",
+                    "  exit 1\n",
+                    "}\n",
+                    "# All is well so signal success\n",
+                    "/opt/aws/bin/cfn-signal -e 0 -r \"Setup complete\" '", { "Ref" : "WaitHandle" }, "'\n"
+                ]]}},
+                "Tags": [{ 
+                    "Key" : "Name",
+                    "Value" : { "Fn::Join" : [".", [ "platform-nat-001", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]}
+                }, {
+                    "Key" : "Region",
+                    "Value" : { "Ref" : "AWS::Region" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                 }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                }]
+            } 
+        },
+    
+        "NatInstance2": {
+            "Type": "AWS::EC2::Instance",
+            "DependsOn": ["InternetGateway", "NatSecurityGroup" ], 
+            "Properties": {
+                "ImageId": { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref": "AWS::Region" }, { "Fn::FindInMap": [ "AWSInstanceType2Arch", { "Ref": "NatInstanceType" }, "nat" ] } ] }, 
+                "InstanceType": {"Ref": "NatInstanceType"}, 
+                "KeyName": {"Ref": "KeyName"}, 
+                "SourceDestCheck" : "False",
+                "DisableApiTermination" : "False",
+                "InstanceInitiatedShutdownBehavior": "stop",
+                "Monitoring": "True",
+                "IamInstanceProfile" : {"Ref": "NatInstanceProfile" },
+                "NetworkInterfaces" : [{
+                    "GroupSet"                 : [{ "Ref" : "NatSecurityGroup" } ],
+                    "AssociatePublicIpAddress" : "true",
+                    "DeviceIndex"              : "0",
+                    "DeleteOnTermination"      : "true",
+                    "SubnetId"                 : { "Ref" : "PublicSubnet2" }
+                }],
+                "UserData" : { "Fn::Base64" : { "Fn::Join" : ["", [
+                    "#!/bin/bash -v", "\n",
+                    "# install base packages", "\n",
+                    "yum install -y python27-pip.noarch python27-botocore.noarch aws-cli.noarch aws-apitools-common.noarch yum-plugin-priorities.noarch openssh-clients", "\n",
+                    "# update the system to latest and greatest", "\n",
+                    "yum update -y ", "\n",
+                    "# install python modules", "\n",
+                    "pip install boto3 amqp  anyjson  backports.ssl-match-hostname  billiard  docopt jedi jmespath  kombu  prompt-toolkit  ptpython python-dateutil  six", "\n",
+                    "# set the hostname", "\n",                    
+                    "hostname ", { "Fn::Join" : [".", [ "platform-nat-002", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]}, "\n",
+                    "sed -i -e 's/HOSTNAME=localhost.localdomain/HOSTNAME=", { "Fn::Join" : [".", [ "platform-nat-002", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]}, "/' /etc/sysconfig/network\n",
+                    "# Helper function\n",
+                    "function error_exit\n",
+                    "{\n",
+                    "  /opt/aws/bin/cfn-signal -e 1 -r \"$1\" '", { "Ref" : "WaitHandle" }, "'\n",
+                    "  exit 1\n",
+                    "}\n",
+                    "# All is well so signal success\n",
+                    "/opt/aws/bin/cfn-signal -e 0 -r \"Setup complete\" '", { "Ref" : "WaitHandle" }, "'\n"
+                ]]}},
+                "Tags": [{ 
+                    "Key" : "Name",
+                    "Value" : { "Fn::Join" : [".", [ "platform-nat-002", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]}
+                },{
+                    "Key" : "Region",
+                    "Value" : { "Ref" : "AWS::Region" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref": "Environment" }
+                 }, {
+                    "Key" : "VPC",
+                    "Value" : { "Ref": "VPCName" }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : {"Ref":"Domain"}
+                }]
+            } 
+        },
+
+        "BastionInternalDNS" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : ["BastionInstance"],
+            "Properties" : {
+                "HostedZoneName" : { "Fn::Join" : [ "",  [ { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, ".", {"Ref" : "Domain"},"." ] ] },
+                "Comment" : "Bastion A Record",
+                "Name" : { "Fn::Join" : [".", [ "shared-bastion-001", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]},
+                "Type" : "A",
+                "TTL" : "300",
+                "ResourceRecords" : [ { "Fn::GetAtt" : [ "BastionInstance", "PrivateIp" ]} ]
+            }
+        },
+
+        "NatInternalDNS1" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : ["NatInstance1"],
+            "Properties" : {
+                "HostedZoneName" : { "Fn::Join" : [ "",  [ { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, ".", {"Ref" : "Domain"},"." ] ] },
+                "Comment" : "Nat1 A Record",
+                "Name" : { "Fn::Join" : [".", [ "platform-nat-001", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]},
+                "Type" : "A",
+                "TTL" : "300",
+                "ResourceRecords" : [ { "Fn::GetAtt" : [ "NatInstance1", "PrivateIp" ]} ]
+            }
+        },
+
+        "NatInternalDNS2" : {
+            "Type" : "AWS::Route53::RecordSet",
+            "DependsOn" : ["NatInstance2"],
+            "Properties" : {
+                "HostedZoneName" : { "Fn::Join" : [ "",  [ { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, ".", {"Ref" : "Domain"},"." ] ] },
+                "Comment" : "Nat2 A Record",
+                "Name" : { "Fn::Join" : [".", [ "platform-nat-002", { "Ref" : "Environment" }, { "Ref": "VPCName" }, { "Fn::FindInMap": [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "shortregion"] }, { "Ref" : "Domain" } ]]},
+                "Type" : "A",
+                "TTL" : "300",
+                "ResourceRecords" : [ { "Fn::GetAtt" : [ "NatInstance2", "PrivateIp" ]} ]
+            }
+        },
+
+        "WaitHandle" : {
+            "Type" : "AWS::CloudFormation::WaitConditionHandle"
+        }
+    },
+
+    "Outputs" : {
+        "VPCName": {
+            "Description": "VPC Name", 
+            "Value": {"Ref": "VPCName"}
+        },
+        "Region": {
+            "Description": "AWS Region",
+            "Value": {"Ref": "AWS::Region"}
+        },
+        "VPCId": {
+            "Description": "VPC ID",
+            "Value": {"Ref": "VPC"}
+        },
+
+        "BastionIP":{
+            "Description": "Public Bastion IP",
+            "Value": { "Fn::GetAtt" : [ "BastionInstance", "PublicIp" ]}
+        },
+
+        "PrivateSubnet1" :{
+            "Description": "Private Subnet1",
+            "Value": {"Ref": "PrivateSubnet1"} 
+        },
+        "PrivateSubnet2" :{
+            "Description": "Private Subnet2",
+            "Value": {"Ref": "PrivateSubnet2"} 
+        },
+        "PublicSubnet1" :{
+            "Description": "Public Subnet1",
+            "Value": {"Ref": "PublicSubnet1"} 
+        },
+        "PublicSubnet2" :{
+            "Description": "Public Subnet2",
+            "Value": {"Ref": "PublicSubnet2"} 
+        }
+    }
+}

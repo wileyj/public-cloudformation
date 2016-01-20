@@ -1,0 +1,178 @@
+[{
+    "ParameterKey"   : "SolutionStackName",
+    "ParameterValue" : "64bit Amazon Linux 2015.09 v2.0.4 running Tomcat 8 Java 8"
+},{
+    "ParameterKey"   : "NotifyEmail",
+    "ParameterValue" : "aws@test.com"
+},{
+    "ParameterKey"   : "NotifyMethod",
+    "ParameterValue" : "email"
+},{
+    "ParameterKey"   : "InstanceProfile",
+    "ParameterValue" : "Base"
+},{
+    "ParameterKey"   : "HealthReportType",
+    "ParameterValue" : "enhanced"
+},{
+    "ParameterKey"   : "EnvironmentShort",
+    "ParameterValue" : "test.com"
+},{
+    "ParameterKey"   : "Environment",
+    "ParameterValue" : "production"
+},{
+    "ParameterKey"   : "EnvironmentName",
+    "ParameterValue" : "1"
+},{
+    "ParameterKey"   : "ServiceRole",
+    "ParameterValue" : "Base"
+},{
+    "ParameterKey"   : "WarName",
+    "ParameterValue" : "warfile.zip"
+},{
+    "ParameterKey"   : "KeyName",
+    "ParameterValue" : "key" 
+},{
+    "ParameterKey"   : "InstanceType",
+    "ParameterValue" : "m3.medium"
+},{
+    "ParameterKey"   : "AppName",
+    "ParameterValue" : "Tomcat"
+},{
+    "ParameterKey"   : "HttpPort",
+    "ParameterValue" : "80"
+},{
+    "ParameterKey"   : "HttpsPort",
+    "ParameterValue" : "443"
+},{
+    "ParameterKey"   : "MaxSize",
+    "ParameterValue" : "3"
+},{
+    "ParameterKey"   : "MinSize",
+    "ParameterValue" : "3"
+},{
+    "ParameterKey"   : "VersionLabel",
+    "ParameterValue" : "Initial Build"
+},{
+    "ParameterKey"   : "AppVersion",
+    "ParameterValue" : "123456789"
+},{
+    "ParameterKey"   : "ASGCooldown",
+    "ParameterValue" : "300"
+},{
+    "ParameterKey"   : "ASGMonitoringInterval",
+    "ParameterValue" : "1"
+},{
+    "ParameterKey"   : "ASGEnvironmentType",
+    "ParameterValue" : "LoadBalanced"
+},{
+    "ParameterKey"   : "ASGRollingUpdateType",
+    "ParameterValue" : "Health"
+},{
+    "ParameterKey"   : "ASGRollingUpdateEnabled",
+    "ParameterValue" : "true"
+},{
+    "ParameterKey"   : "ASGMaxBatchSize",
+    "ParameterValue" : "2"
+},{
+    "ParameterKey"   : "ASGMinInstancesInService",
+    "ParameterValue" : "2"
+},{
+    "ParameterKey"   : "ASGMeasureName",
+    "ParameterValue" : "NetworkOut"
+},{
+    "ParameterKey"   : "ASGLowerThreshold",
+    "ParameterValue" : "5500000"
+},{
+    "ParameterKey"   : "ASGUpperThreshold",
+    "ParameterValue" : "7500000"
+},{
+    "ParameterKey"   : "ASGPeriod",
+    "ParameterValue" : "1"
+},{
+    "ParameterKey"   : "ASGUnit",
+    "ParameterValue" : "Bytes"
+},{
+    "ParameterKey"   : "ASGStatistic",
+    "ParameterValue" : "Average"
+},{
+    "ParameterKey"   : "ASGUpperBreachScaleIncrement",
+    "ParameterValue" : "1"
+},{
+    "ParameterKey"   : "ASGLowerBreachScaleIncrement",
+    "ParameterValue" : "-1"
+},{
+    "ParameterKey"   : "ASGBreachDuration",
+    "ParameterValue" : "1"
+},{
+    "ParameterKey"   : "ASGRootVolumeType",
+    "ParameterValue" : "gp2"
+},{
+    "ParameterKey"   : "LogPublicationControl",
+    "ParameterValue" : "false"
+},{
+    "ParameterKey"   : "TomcatXmx",
+    "ParameterValue" : "512m"
+},{
+    "ParameterKey"   : "TomcatXms",
+    "ParameterValue" : "512m"
+},{
+    "ParameterKey"   :  "TomcatMaxPermSize",
+    "ParameterValue" : "64m"
+},{
+    "ParameterKey"   : "ELBCrossZone",
+    "ParameterValue" : "true"
+},{
+    "ParameterKey"   : "ELBHealthcheckURL",
+    "ParameterValue" : "/health"
+},{
+    "ParameterKey"   : "ELBTimeout",
+    "ParameterValue" : "4"
+},{
+    "ParameterKey"   : "ELBCommandTimeout",
+    "ParameterValue" : "300"
+},{
+    "ParameterKey"   : "ELBBatchSizeType",
+    "ParameterValue" : "Percentage"
+},{
+    "ParameterKey"   : "ELBBatchSize",
+    "ParameterValue" : "55"
+},{
+    "ParameterKey"   : "ELBConnectionDrainingEnabled",
+    "ParameterValue" : "true"
+},{
+    "ParameterKey"   : "ELBConnectionDrainingTimeout",
+    "ParameterValue" : "20"
+},{
+    "ParameterKey"   : "ELBHealthyThreshold",
+    "ParameterValue" : "3"
+},{
+    "ParameterKey"   : "ELBUnhealthyThreshold",
+    "ParameterValue" : "3"
+},{
+    "ParameterKey"   : "ELBInterval",
+    "ParameterValue" : "5"
+},{
+    "ParameterKey"   : "ELBTimeout",
+    "ParameterValue" : "4"
+},{
+    "ParameterKey"   : "ELBScheme",
+    "ParameterValue" : "external"
+},{
+    "ParameterKey"   : "NotifyArn",
+    "ParameterValue" : "Default"
+},{
+    "ParameterKey"   : "SecurityGroups",
+    "ParameterValue" : "Default"
+},{
+    "ParameterKey"   : "NotifyTopic",
+    "ParameterValue" : "Default"
+},{
+    "ParameterKey"   : "PublicSubnets",
+    "ParameterValue" : "Default"
+},{
+    "ParameterKey"   : "PrivateSubnets",
+    "ParameterValue" : "Default"
+},{
+    "ParameterKey"   : "JVMOptions",
+    "ParameterValue" : "Default"
+}]

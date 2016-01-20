@@ -8,10 +8,10 @@ Usage: $0 <update/create> <region> <Stack Name> <Cloudformation json> <cloudform
 
 ex:
 Create new stack: 
-    $0 create us-east-1 App-slots-prod-1 vpc.json launch-params-app-us-east-1.json --debug
+    $0 create us-east-1 App-prod-1 Beanstalk-app.json launch-params-app.json --debug
 
 Update existing stack:
-    $0 update us-west-1 VPC-Service vpc.json launch-params-vpc-service.json --debug
+    $0 update us-west-1 VPC-Service VPC-Service.json launch-params-vpc.json --debug
 
 "
 fi
@@ -22,17 +22,15 @@ elif [ "$1" == "update "]; then
     echo "aws update stack $2"
 else
     echo "default"
-    read ans
+    #read ans
     aws --region $1 cloudformation create-stack --stack-name $2 --template-body file://$3 --parameters file://$4 --capabilities CAPABILITY_IAM $5
-    aws s3 cp $3 s3://netflix-cloudformation/$4
+    #aws s3 cp $3 s3://companyname-cloudformation/$4
 fi
 
-# aws --region us-east-1 cloudformation create-stack --stack-name Slots-Puppet --template-body file:///Users/wileyj/git/ops-cloudformation/beanstalk.json --capabilities CAPABILITY_IAM --debug
-# run.sh create us-east-1 VPC-us-east-1 vpc.json launch-params-vpc.json --debug
-#
-#
-# sh run.sh create us-west-2 Staging-Stepper-App app-stepper-env.json launch-params-stepper-staging-env-us-west-2.json --debug
-# sh run.sh create us-west-2 Staging-Stepper-1 app-stepper.json launch-params-stepper-staging-us-west-2.json --debug
+# sh run.sh create us-east-1 VPC-us-east-1 vpc.json launch-params-vpc.json --debug
+# sh run.sh create us-west-2 Staging Beanstalk-app-env.json launch-params-app-env.json --debug
+# sh run.sh create us-west-2 Staging-App-1 Beanstalk-app.json launch-params-app.json --debug
+# sh run.sh update us-west-2 Staging-App-1 Beanstalk-app.json launch-params-app.json --debug
 
 
 

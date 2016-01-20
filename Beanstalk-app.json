@@ -27,14 +27,6 @@
             "Type" : "String",
             "Default" : "enhanced"
         },
-        "VPCId":{
-            "Description" : "VPCId",
-            "Type" : "String"
-        },
-        "EnvironmentShort":{
-            "Description" : "EnvironmentShort",
-            "Type" : "String"
-        },
         "Domain": {
             "Type" : "String",
             "Description" : "Name of the Domain",
@@ -42,11 +34,17 @@
         },
         "Environment" :{
             "Type": "String",
-            "Description" : "Environment"
+            "Description" : "production"
         },
         "EnvironmentName" :{
             "Type": "String",
-            "Description" : "EnvironmentName"
+            "Description" : "EnvironmentName",
+            "Default": "1"
+        },
+        "EnvironmentShort":{
+            "Description" : "EnvironmentShort",
+            "Type" : "String",
+            "Default": "prod"
         },
         "ServiceRole": {
             "Type" : "String",
@@ -55,7 +53,8 @@
         },
         "WarName": {
             "Type": "String",
-            "Description" : "WarName"
+            "Description" : "WarName",
+            "Default": "warfile.zip"
         },
         "KeyName": {
             "Type" : "String",
@@ -131,12 +130,12 @@
         "ASGMaxBatchSize" : {
             "Type" : "String",
             "Description" : "ASGMaxBatchSize",
-             "Default" : "2"
+            "Default" : "2"
         },
         "ASGMinInstancesInService" : {
             "Type" : "String",
             "Description" : "ASGMinInstancesInService",
-             "Default" : "2"
+            "Default" : "2"
         },
         "ASGMeasureName" : {
             "Type" : "String",
@@ -274,11 +273,6 @@
             "Default" : "external",
             "Default" : "Default"
         },
-        "VPCId" : {
-            "Type" : "String",
-            "Description" : "VPCId",
-            "Default" : "Default"
-        },
         "NotifyArn" : {
             "Type" : "String",
             "Description" : "NotifyArn",
@@ -350,10 +344,10 @@
         },
         "VPCNetworkSettings" : {
             "us-east-1" : { 
-                "SecurityGroups" : "sg-22bc4b44,sg-be55f7d8,sg-8855f7ee",
-                "PublicSubnets"  : "subnet-aa6ffedd,subnet-4a0dd261",
-                "PrivateSubnets" : "subnet-a96ffede,subnet-490dd262",
-                "VPC"            : "vpc-f7453492"
+                "SecurityGroups" : "sg-123456,sg-123457,sg-123458",
+                "PublicSubnets"  : "subnet-123456,subnet-123457",
+                "PrivateSubnets" : "subnet-123458,subnet-123459",
+                "VPC"            : "vpc-123456"
             }
         },
         "RegionToVpc" : {

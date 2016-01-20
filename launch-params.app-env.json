@@ -1,0 +1,13 @@
+[{
+    "ParameterKey"   : "Environment",
+    "ParameterValue" : "production"
+},{
+    "ParameterKey"   : "AppName",
+    "ParameterValue" : "tomcat"
+},{
+    "ParameterKey"   : "SNSTopicName",
+    "ParameterValue" : "Prod"
+},{
+    "ParameterKey"   : "SNSDisplayName",
+    "ParameterValue" : "Prod"
+}]

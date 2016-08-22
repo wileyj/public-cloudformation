@@ -30,8 +30,8 @@
             "Description" : "UTC date of preferred maintenance window",
             "Type": "String",
             "Default" : "mon:08:30-mon:09:00"
-        }, 
-        
+        },
+
         "PublicSubnet" :{
             "Description" : "PublicSubnet",
             "Type" : "String"
@@ -67,7 +67,7 @@
             "Type" : "String",
             "AllowedValues" : [ "ds1.xlarge", "ds1.8xlarge", "ds2.xlarge", "ds2.8xlarge", "dc1.xlarge", "dc1.8xlarge" ],
             "Default": "ds2.xlarge"
-        }, 
+        },
 
         "MasterUsername" : {
             "Description" : "The user name that is associated with the master user account for the cluster that is being created",
@@ -111,7 +111,7 @@
                     "ToPort" : "22",
                     "CidrIp" : { "Ref": "InboundTraffic" }
                 }],
-                "Tags": [{ 
+                "Tags": [{
                     "Key" : "Stack",
                     "Value" : { "Ref": "AWS::StackId" }
                 }, {
@@ -143,7 +143,7 @@
                 "IpProtocol" : "icmp",
                 "FromPort": "-1",
                 "ToPort": "-1",
-                "CidrIp" : { "Ref": "InboundTraffic" }           
+                "CidrIp" : { "Ref": "InboundTraffic" }
             }
         },
         "RedshiftDBSecurityGroup" : {
@@ -154,7 +154,7 @@
                 "IpProtocol" : "tcp",
                 "FromPort": {"Ref": "PortNumber"},
                 "ToPort": {"Ref": "PortNumber"},
-                "CidrIp" : { "Ref": "InboundTraffic" }        
+                "CidrIp" : { "Ref": "InboundTraffic" }
             }
         },
         "RedshiftCluster" : {
@@ -166,7 +166,7 @@
                 "NodeType" : { "Ref" : "NodeType" },
                 "DBName" : { "Ref" : "DatabaseName" },
                 "MasterUsername" : { "Ref" : "MasterUsername" },
-                "MasterUserPassword" : { "Ref" : "MasterUserPassword" },               
+                "MasterUserPassword" : { "Ref" : "MasterUserPassword" },
                 "ClusterParameterGroupName" : { "Ref" : "RedshiftClusterParameterGroup" },
                 "VpcSecurityGroupIds" : [ { "Ref" : "RedshiftSecurityGroup" } ],
                 "ClusterSubnetGroupName" : { "Ref" : "RedshiftClusterSubnetGroup" },
@@ -210,7 +210,7 @@
             "Description" : "Cluster endpoint",
             "Value" : { "Fn::Join" : [ ":", [ { "Fn::GetAtt" : [ "RedshiftCluster", "Endpoint.Address" ] }, { "Fn::GetAtt" : [ "RedshiftCluster", "Endpoint.Port" ] } ] ] }
         },
-    
+
         "ClusterName" : {
             "Description" : "Name of cluster",
             "Value" : { "Ref" : "RedshiftCluster" }
@@ -232,13 +232,13 @@
         },
 
         "VPCName": {
-            "Description": "VPC Name", 
+            "Description": "VPC Name",
             "Value": {"Ref": "VPCName"}
         },
 
         "VPCid": {
             "Description": "VPC ID",
             "Value": {"Ref": "VPCid"}
-        }       
+        }
     }
 }

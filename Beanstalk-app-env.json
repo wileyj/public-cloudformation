@@ -55,7 +55,7 @@
         },
         "Application": {
             "Description" : "Application",
-            "Value"       : { "Ref" : "Application" }  
+            "Value"       : { "Ref" : "Application" }
         },
         "SNSTopicName": {
             "Description" : "SNSTopicName",

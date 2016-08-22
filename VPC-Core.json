@@ -1,11 +1,11 @@
 {
    "AWSTemplateFormatVersion":"2010-09-09",
-   "Description":"DB VPC",
+   "Description":"Core vVPC",
     "Parameters" : {
         "VPCName" : {
             "Type" : "String",
             "Description" : "Lowercase VPCName",
-            "Default" : "db"
+            "Default" : "core"
         },
         "Environment":{
             "Type": "String",

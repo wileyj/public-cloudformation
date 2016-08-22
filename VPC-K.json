@@ -1,11 +1,11 @@
 {
    "AWSTemplateFormatVersion":"2010-09-09",
-   "Description":"DB VPC",
+   "Description":"K VPC",
     "Parameters" : {
         "VPCName" : {
             "Type" : "String",
             "Description" : "Lowercase VPCName",
-            "Default" : "db"
+            "Default" : "k"
         },
         "Environment":{
             "Type": "String",
@@ -61,7 +61,7 @@
                 "NATAZ1"     : "10.3.253.0/24",
                 "NATAZ2"     : "10.3.254.0/24"
             },
-            "ecs" : {
+            "k" : {
                 "VPC"        : "10.100.0.0/16",
                 "PublicAZ1"  : "10.100.100.0/23",
                 "PublicAZ2"  : "10.100.102.0/23",
@@ -95,8 +95,8 @@
             "db" : {
                 "Name" : "DB"
             },
-            "ecs" : {
-                "Name" : "ECS"
+            "k" : {
+                "Name" : "K"
             },
             "core" : {
                 "Name" : "Core"
@@ -177,6 +177,7 @@
         },
         "InternetGatewayAttachement" : {
             "Type":"AWS::EC2::VPCGatewayAttachment",
+            "DependsOn": "InternetGateway",
             "Properties":{
                 "InternetGatewayId":{  "Ref":"InternetGateway"},
                 "VpcId":{  "Ref":"VPC"}
@@ -422,7 +423,7 @@
         },
         "InternetRoute" : {
             "Type":"AWS::EC2::Route",
-            "DependsOn":"InternetGateway",
+            "DependsOn": [ "InternetGateway" ],
             "Properties":{
                 "RouteTableId":{  "Ref":"PublicSubnetsRouteTable"},
                 "DestinationCidrBlock":"0.0.0.0/0",
@@ -431,7 +432,7 @@
         },
         "NatRouteAZ1" : {
             "Type": "AWS::EC2::Route",
-            "DependsOn":[  "AssociateRouteTableWithNatSubnetAZ1" ],
+            "DependsOn":[  "InternetGateway", "AssociateRouteTableWithNatSubnetAZ1" ],
             "Properties":{
                 "RouteTableId":{  "Ref":"PrivateSubnetsRouteTableAZ1"},
                 "DestinationCidrBlock":"0.0.0.0/0",
@@ -440,7 +441,7 @@
         },
         "NatRouteAZ2" : {
             "Type": "AWS::EC2::Route",
-            "DependsOn":[  "AssociateRouteTableWithNatSubnetAZ2" ],
+            "DependsOn":[  "InternetGateway", "AssociateRouteTableWithNatSubnetAZ2" ],
             "Properties":{
                 "RouteTableId":{  "Ref":"PrivateSubnetsRouteTableAZ2"},
                 "DestinationCidrBlock":"0.0.0.0/0",
@@ -449,6 +450,7 @@
         },
         "AssociateRouteTableWithNatSubnetAZ1" : {
             "Type":"AWS::EC2::SubnetRouteTableAssociation",
+            "DependsOn": [ "InternetGateway" ],
             "Properties":{
                 "RouteTableId":{  "Ref":"PublicSubnetsRouteTable"},
                 "SubnetId":{  "Ref":"NatSubnetAZ1"}
@@ -456,6 +458,7 @@
         },
         "AssociateRouteTableWithNatSubnetAZ2" : {
             "Type":"AWS::EC2::SubnetRouteTableAssociation",
+            "DependsOn": [ "InternetGateway" ],
             "Properties":{
                 "RouteTableId":{  "Ref":"PublicSubnetsRouteTable"},
                 "SubnetId":{  "Ref":"NatSubnetAZ2"}
@@ -463,6 +466,7 @@
         },
         "AssociateRouteTableWithPrivateSubnetAZ1" : {
             "Type":"AWS::EC2::SubnetRouteTableAssociation",
+            "DependsOn": [ "InternetGateway" ],
             "Properties":{
                 "RouteTableId":{  "Ref":"PrivateSubnetsRouteTableAZ1"},
                 "SubnetId":{  "Ref":"PrivateSubnetAZ1"}
@@ -470,6 +474,7 @@
         },
         "AssociateRouteTableWithPrivateSubnetAZ2" : {
             "Type":"AWS::EC2::SubnetRouteTableAssociation",
+            "DependsOn": [ "InternetGateway" ],
             "Properties":{
                 "RouteTableId":{  "Ref":"PrivateSubnetsRouteTableAZ2"},
                 "SubnetId":{  "Ref":"PrivateSubnetAZ2"}
@@ -477,6 +482,7 @@
         },
         "AssociateRouteTableWithPublicSubnetAZ1" : {
             "Type":"AWS::EC2::SubnetRouteTableAssociation",
+            "DependsOn": [ "InternetGateway" ],
             "Properties":{
                 "RouteTableId":{  "Ref":"PublicSubnetsRouteTable"},
                 "SubnetId":{  "Ref":"PublicSubnetAZ1"}
@@ -484,6 +490,7 @@
         },
         "AssociateRouteTableWithPublicSubnetAZ2" : {
             "Type":"AWS::EC2::SubnetRouteTableAssociation",
+            "DependsOn": [ "InternetGateway" ],
             "Properties":{
                 "RouteTableId":{  "Ref":"PublicSubnetsRouteTable"},
                 "SubnetId":{  "Ref":"PublicSubnetAZ2"}
@@ -510,6 +517,7 @@
         },
         "SubnetNetworkAclAssociationPublicSubnetAZ1" : {
             "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+            "DependsOn": [ "PublicSubnetAZ1", "NetworkAcl" ],
             "Properties" : {
                 "SubnetId" : { "Ref" : "PublicSubnetAZ1" },
                 "NetworkAclId" : { "Ref" : "NetworkAcl" }
@@ -517,6 +525,7 @@
         },
         "SubnetNetworkAclAssociationPublicSubnetAZ2" : {
             "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+            "DependsOn": [ "PublicSubnetAZ2", "NetworkAcl" ],
             "Properties" : {
                 "SubnetId" : { "Ref" : "PublicSubnetAZ2" },
                 "NetworkAclId" : { "Ref" : "NetworkAcl" }
@@ -524,6 +533,7 @@
         },
         "SubnetNetworkAclAssociationPrivateSubnetAZ1" : {
             "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+            "DependsOn": [ "PrivateSubnetAZ1", "NetworkAcl" ],
             "Properties" : {
                 "SubnetId" : { "Ref" : "PrivateSubnetAZ1" },
                 "NetworkAclId" : { "Ref" : "NetworkAcl" }
@@ -531,6 +541,7 @@
         },
         "SubnetNetworkAclAssociationPrivateSubnetAZ2" : {
             "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+            "DependsOn": [ "PrivateSubnetAZ2", "NetworkAcl" ],
             "Properties" : {
                 "SubnetId" : { "Ref" : "PrivateSubnetAZ2" },
                 "NetworkAclId" : { "Ref" : "NetworkAcl" }
@@ -538,6 +549,7 @@
         },
         "SubnetNetworkAclAssociationNatSubnetAZ1" : {
             "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+            "DependsOn": [ "NatSubnetAZ1", "NetworkAcl" ],
             "Properties" : {
                 "SubnetId" : { "Ref" : "NatSubnetAZ1" },
                 "NetworkAclId" : { "Ref" : "NetworkAcl" }
@@ -545,6 +557,7 @@
         },
         "SubnetNetworkAclAssociationNatSubnetAZ2" : {
             "Type" : "AWS::EC2::SubnetNetworkAclAssociation",
+            "DependsOn": [ "NatSubnetAZ2", "NetworkAcl" ],
             "Properties" : {
                 "SubnetId" : { "Ref" : "NatSubnetAZ2" },
                 "NetworkAclId" : { "Ref" : "NetworkAcl" }
@@ -633,12 +646,46 @@
                 "DhcpOptionsId" : {"Ref" : "DHCPOptions"}
             }
         },
+        "InternalSecurityGroup": {
+            "DependsOn" : ["VPC"],
+            "Type": "AWS::EC2::SecurityGroup",
+            "Properties": {
+                "GroupDescription": { "Fn::Join" : ["-", [ { "Fn::FindInMap" : [ "VPCtoUpper", { "Ref" : "VPCName" }, "Name" ] }, "Internal-Traffic" ]]},
+                "VpcId": {"Ref": "VPC"},
+                "SecurityGroupIngress": [{
+                    "IpProtocol" : "-1",
+                    "CidrIp": { "Fn::FindInMap" : [ "SubnetConfig", { "Ref" : "VPCName" }, "VPC" ] }
+                },{
+                    "IpProtocol" : "-1",
+                    "CidrIp": { "Fn::FindInMap" : [ "SubnetConfig", "bastion", "VPC" ] }
+                },{
+                    "IpProtocol" : "-1",
+                    "CidrIp": { "Fn::FindInMap" : [ "SubnetConfig", "core", "VPC" ] }
+                }],
+                "Tags": [{
+                    "Key" : "Name",
+                    "Value" : { "Fn::Join" : ["-", [ { "Fn::FindInMap" : [ "VPCtoUpper", { "Ref" : "VPCName" }, "Name" ] }, "Internal-Traffic" ]]}
+                }, {
+                    "Key" : "Stack",
+                    "Value" : { "Ref" : "AWS::StackId" }
+                }, {
+                    "Key" : "Environment",
+                    "Value" : { "Ref" : "Environment" }
+                }, {
+                    "Key" : "VPC",
+                    "Value" : { "Fn::FindInMap" : [ "VPCtoUpper", { "Ref" : "VPCName" }, "Name" ] }
+                }, {
+                    "Key" : "Domain",
+                    "Value" : { "Ref" : "Domain" }
+                }]
+            }
+        },
         "WaitHandle":{
             "Type":"AWS::CloudFormation::WaitConditionHandle",
             "Properties":{}
         }
     },
-   "Outputs":{
+    "Outputs": {
         "VPC" : {
             "Description" : "VPC Name",
             "Value" : { "Fn::FindInMap" : [ "VPCtoUpper", { "Ref" : "VPCName" }, "Name" ] }
@@ -657,11 +704,11 @@
         },
         "NatEIPAZ1":{
             "Description":"NAT GW AZ1 EIP",
-            "Value":{  "Ref":"NatEIPAZ1" }
+            "Value":{ "Ref":"NatEIPAZ1" }
         },
         "NatEIPAZ2":{
             "Description":"NAT GW AZ2 EIP",
-            "Value":{  "Ref":"NatEIPAZ2" }
+            "Value":{ "Ref":"NatEIPAZ2" }
         }
     }
 }

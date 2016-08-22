@@ -7,7 +7,7 @@ echo "
 Usage: $0 <update/create> <region> <Stack Name> <Cloudformation json> <cloudformation params file> <--debug?>
 
 ex:
-Create new stack: 
+Create new stack:
     $0 create us-east-1 App-prod-1 Beanstalk-app.json launch-params-app.json --debug
 
 Update existing stack:
@@ -31,6 +31,3 @@ fi
 # sh run.sh create us-west-2 Staging Beanstalk-app-env.json launch-params-app-env.json --debug
 # sh run.sh create us-west-2 Staging-App-1 Beanstalk-app.json launch-params-app.json --debug
 # sh run.sh update us-west-2 Staging-App-1 Beanstalk-app.json launch-params-app.json --debug
-
-
-

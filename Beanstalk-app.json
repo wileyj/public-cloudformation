@@ -7,12 +7,12 @@
             "Type": "String",
             "Default": "64bit Amazon Linux 2015.09 v2.0.4 running Tomcat 8 Java 8"
         },
-        "NotifyEmail":{ 
+        "NotifyEmail":{
             "Description": "NotifyEmail",
             "Type": "String",
             "Default":"aws@test.com"
         },
-        "NotifyMethod":{ 
+        "NotifyMethod":{
             "Description": "NotifyMethod",
             "Type": "String",
             "Default":"email"
@@ -59,7 +59,7 @@
         "KeyName": {
             "Type" : "String",
             "Description" : "KeyName",
-            "Default": "key" 
+            "Default": "key"
         },
         "InstanceType": {
             "Type" : "String",
@@ -76,22 +76,22 @@
             "Type" : "String",
             "Description" : "HttpPort",
             "Default":"80"
-        }, 
+        },
         "HttpsPort": {
             "Type" : "String",
             "Description" : "HttpsPort",
             "Default":"443"
-        }, 
+        },
         "MaxSize": {
             "Type" : "String",
             "Description" : "MaxSize",
             "Default":"3"
-        }, 
+        },
         "MinSize": {
             "Type" : "String",
             "Description" : "MinSize",
             "Default":"3"
-        }, 
+        },
         "VersionLabel": {
             "Type" : "String",
             "Description" : "VersionLabel",
@@ -106,7 +106,7 @@
             "Type" : "Number",
             "Description" : "ASGCooldown",
             "Default" : "300"
-        }, 
+        },
         "ASGMonitoringInterval" : {
             "Type" : "String",
             "Description" : "ASGMonitoringInterval",
@@ -277,7 +277,7 @@
             "Type" : "String",
             "Description" : "NotifyArn",
             "Default" : "Default"
-        }, 
+        },
         "SecurityGroups" : {
             "Type" : "String",
             "Description" : "SecurityGroups",
@@ -306,16 +306,16 @@
     },
     "Mappings": {
         "AWSRegionArch2AMI": {
-            "us-east-1" : { 
-                "minhvm"        : "ami-fbb9c991", 
-                "minpv"         : "ami-93b7c7f9", 
-                "nathvm"        : "ami-68115b02", 
-                "natpv"         : "ami-c02b04a8",
-                "hvmgp2"        : "ami-60b6c60a", 
-                "hvmebs"        : "ami-40b7c72a", 
-                "pvebs"         : "ami-5fb8c835",
-                "pvinstance"    : "ami-30b6c65a",
-                "shortregion"   : "use1" 
+            "us-east-1" : {
+                "minhvm"        : "ami-12345678",
+                "minpv"         : "ami-12345678",
+                "nathvm"        : "ami-12345678",
+                "natpv"         : "ami-12345678",
+                "hvmgp2"        : "ami-12345678",
+                "hvmebs"        : "ami-12345678",
+                "pvebs"         : "ami-12345678",
+                "pvinstance"    : "ami-12345678",
+                "shortregion"   : "use1"
             }
         },
         "AWSInstanceType2Arch" : {
@@ -323,19 +323,19 @@
             "m4.large" :  {   "bastion": "minhvm", "nat" : "nathvm"  }
         },
         "EnvSettings":{
-            "dev"           : { 
+            "dev"           : {
                 "SSLCert": "arn:aws:iam:333333333333:server-certificate/wildcard.test.com",
                 "NotifyArn": "arn:aws:sns:us-east-1:333333333333:Dev",
                 "NotifyTopic": "Dev",
                 "JVMOptions": "-DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector"
             },
-            "production"    : { 
+            "production"    : {
                 "SSLCert": "arn:aws:iam::333333333333:server-certificate/wildcard.test.com",
                 "NotifyArn": "arn:aws:sns:us-east-1:333333333333:Prod",
                 "NotifyTopic": "Prod",
                 "JVMOptions": "-DLog4jContextSelector=org.apache.logging.log4j.core.async.AsyncLoggerContextSelector -Dnewrelic.environment=prod -javaagent:\/opt\/newrelic\/newrelic.jar"
             },
-            "staging"       : { 
+            "staging"       : {
                 "SSLCert": "arn:aws:iam::333333333333:server-certificate/wildcard.test.com",
                 "NotifyArn": "arn:aws:sns:us-east-1:333333333333:Staging",
                 "NotifyTopic": "Staging",
@@ -343,7 +343,7 @@
             }
         },
         "VPCNetworkSettings" : {
-            "us-east-1" : { 
+            "us-east-1" : {
                 "SecurityGroups" : "sg-123456,sg-123457,sg-123458",
                 "PublicSubnets"  : "subnet-123456,subnet-123457",
                 "PrivateSubnets" : "subnet-123458,subnet-123459",
@@ -530,7 +530,7 @@
                 }, {
                     "Namespace" : "aws:autoscaling:launchconfiguration",
                     "OptionName" : "SecurityGroups",
-                    "Value" : { "Fn::FindInMap": [ "VPCNetworkSettings", { "Ref": "AWS::Region" }, "SecurityGroups"]} 
+                    "Value" : { "Fn::FindInMap": [ "VPCNetworkSettings", { "Ref": "AWS::Region" }, "SecurityGroups"]}
                 }, {
                     "Namespace": "aws:autoscaling:asg",
                     "OptionName": "MinSize",
@@ -611,7 +611,7 @@
                     "Namespace": "aws:autoscaling:launchconfiguration",
                     "OptionName": "IamInstanceProfile",
                     "Value": { "Ref": "InstanceProfile" }
-                }]   
+                }]
             }
         },
         "DNSRecordGlobal" : {

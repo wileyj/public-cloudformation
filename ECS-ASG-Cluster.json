@@ -1,0 +1,287 @@
+{
+   "AWSTemplateFormatVersion":"2010-09-09",
+   "Description":"ECS VPC",
+    "Parameters" : {
+        "VPCName" : {
+            "Type" : "String",
+            "Description" : "Lowercase VPCName",
+            "Default" : "ecs"
+        },
+        "Environment":{
+            "Type": "String",
+            "Description": "Default Environment for the VPC, which is prod",
+            "Default": "prod"
+        },
+        "Domain" : {
+            "Type" : "String",
+            "Description" : "Name of the Domain",
+            "Default" : "domain.com"
+        },
+        "InstanceProfile" : {
+            "Type"          : "String",
+            "Default"       : "ECS"
+        },
+        "InstanceRole": {
+            "Type":"String",
+            "Default": "ECS"
+        },
+        "KeyName" : {
+            "Type"          : "String",
+            "Default"       : "base"
+        },
+        "InstanceType" : {
+            "Type"          : "String",
+            "AllowedValues" : [ "t1.micro","t2.micro","t2.small","m3.medium","m3.xlarge","m3.2xlarge","t2.micro","t2.medium","m4.large","m4.xlarge","m4.2xlarge","c4.medium", "c4.xlarge"],
+            "Default"       : "m4.large"
+        },
+        "MinSize" : {
+            "Type"          : "String",
+            "Default"       : "1"
+        },
+        "MaxSize" : {
+            "Type"          : "String",
+            "Default"       : "1"
+        },
+        "DesiredCapacity" : {
+            "Type"          : "String",
+            "Default"       : "1"
+        },
+        "ASGCooldown": {
+            "Type"          : "String",
+            "Default"       : "300"
+        }
+    },
+    "Mappings" : {
+        "AWSRegionArch2AMI": {
+            "us-east-1" : {
+                "ecshvm"        : "ami-12345678",
+                "ecspvbstalk"   : "ami-12345678",
+                "ecshvmbstalk"  : "ami-12345678"
+            }
+        },
+        "AWSInstanceType2Arch" : {
+            "m3.medium" : {   "bastion" : "minebs" },
+            "m4.large" :  {   "bastion": "minhvm" }
+        },
+        "SubnetConfig" : {
+            "web" : {
+                "VPC"        : "10.1.0.0/16",
+                "PublicAZ1"  : "10.1.100.0/23",
+                "PublicAZ2"  : "10.1.102.0/23",
+                "PrivateAZ1" : "10.1.0.0/23",
+                "PrivateAZ2" : "10.1.2.0/23",
+                "NATAZ1"     : "10.1.253.0/24",
+                "NATAZ2"     : "10.1.254.0/24"
+            },
+            "app" : {
+                "VPC"        : "10.2.0.0/16",
+                "PublicAZ1"  : "10.2.100.0/23",
+                "PublicAZ2"  : "10.2.102.0/23",
+                "PrivateAZ1" : "10.2.0.0/23",
+                "PrivateAZ2" : "10.2.2.0/23",
+                "NATAZ1"     : "10.2.253.0/24",
+                "NATAZ2"     : "10.2.254.0/24"
+            },
+            "db" : {
+                "VPC"        : "10.3.0.0/16",
+                "PublicAZ1"  : "10.3.100.0/23",
+                "PublicAZ2"  : "10.3.102.0/23",
+                "PrivateAZ1" : "10.3.0.0/23",
+                "PrivateAZ2" : "10.3.2.0/23",
+                "NATAZ1"     : "10.3.253.0/24",
+                "NATAZ2"     : "10.3.254.0/24"
+            },
+            "ecs" : {
+                "VPC"        : "10.100.0.0/16",
+                "PublicAZ1"  : "10.100.100.0/23",
+                "PublicAZ2"  : "10.100.102.0/23",
+                "PrivateAZ1" : "10.100.0.0/23",
+                "PrivateAZ2" : "10.100.2.0/23",
+                "NATAZ1"     : "10.100.253.0/24",
+                "NATAZ2"     : "10.100.254.0/24"
+            },
+            "bastion" : {
+                "VPC"        : "10.253.0.0/16",
+                "PublicAZ1"  : "10.253.100.0/24",
+                "PublicAZ2"  : "10.253.102.0/24"
+            },
+            "core" : {
+                "VPC"        : "10.254.0.0/16",
+                "PublicAZ1"  : "10.254.100.0/23",
+                "PublicAZ2"  : "10.254.102.0/23",
+                "PrivateAZ1" : "10.254.0.0/23",
+                "PrivateAZ2" : "10.254.2.0/23",
+                "NATAZ1"     : "10.254.253.0/24",
+                "NATAZ2"     : "10.254.254.0/24"
+            }
+        },
+        "SubnetToECS" : {
+            "us-east-1" : {
+                "PublicAZ1" : "subnet-1a526d42",
+                "PublicAZ2" : "subnet-133dd15a",
+                "PrivateAZ1": "subnet-1b526d43",
+                "PrivateAZ2": "subnet-113dd158"
+            }
+        },
+        "VPCtoUpper" : {
+            "web" : {
+                "Name" : "Web"
+            },
+            "app" : {
+                "Name" : "App"
+            },
+            "db" : {
+                "Name" : "DB"
+            },
+            "ecs" : {
+                "Name" : "ECS"
+            },
+            "core" : {
+                "Name" : "Core"
+            },
+            "ssh" : {
+                "Name" : "SSH"
+            },
+            "bastion" : {
+                "Name" : "Bastion"
+            }
+        },
+        "ShortRegion": {
+            "us-east-1": { "Name": "use1" },
+            "us-west-1": { "Name": "usw1" },
+            "us-west-2": { "Name": "usw2" }
+        },
+        "RegionToVpc" : {
+            "us-east-1" : {
+                "AvailabilityZone1" : "us-east-1a",
+                "AvailabilityZone2" : "us-east-1d"
+            },
+            "us-west-2" : {
+                "AvailabilityZone1" : "us-west-2b",
+                "AvailabilityZone2" : "us-west-2c"
+            }
+        },
+        "EnvSwitch" : {
+            "prod"    : { "shortenv" : "p" },
+            "dev"     : { "shortenv" : "d" },
+            "staging" : { "shortenv" : "s" },
+            "qa"      : { "shortenv" : "q" }
+        }
+    },
+    "Conditions":{
+    },
+    "Resources":{
+        "ECSCluster": {
+          "Type": "AWS::ECS::Cluster"
+        },
+        "ECSAutoScalingGroup" : {
+              "Type" : "AWS::AutoScaling::AutoScalingGroup",
+              "Properties" : {
+                "VPCZoneIdentifier" : [
+                    { "Fn::FindInMap" : [ "SubnetToECS", { "Ref" : "AWS::Region" }, "PrivateAZ1" ] }, { "Fn::FindInMap" : [ "SubnetToECS", { "Ref" : "AWS::Region" }, "PrivateAZ2"
+                ]}],
+                "LaunchConfigurationName" : { "Ref" : "ECSLaunchConfig" },
+                "MinSize" : { "Ref" : "MaxSize" },
+                "MaxSize" : { "Ref" : "MaxSize" },
+                "DesiredCapacity" : { "Ref" : "DesiredCapacity" }
+              }
+        },
+        "ECSLaunchConfig": {
+            "Type": "AWS::AutoScaling::LaunchConfiguration",
+            "Metadata" : {
+                "AWS::CloudFormation::Init" : {
+                     "config" : {
+                        "commands" : {
+                            "01_add_instance_to_cluster" : {
+                                "command" : { "Fn::Join": [ "", [
+                                    "#!/bin/bash\n", "echo ECS_CLUSTER=", { "Ref": "ECSCluster" }, " >> /etc/ecs/ecs.config"
+                                ]]}
+                            }
+                        },
+                        "files" : {
+                            "/etc/cfn/cfn-hup.conf" : {
+                                "content" : { "Fn::Join" : ["", [
+                                    "[main]\n",
+                                    "stack=", { "Ref" : "AWS::StackId" }, "\n",
+                                    "region=", { "Ref" : "AWS::Region" }, "\n"
+                                ]]},
+                                "mode"    : "000400",
+                                "owner"   : "root",
+                                "group"   : "root"
+                            },
+                            "/etc/cfn/hooks.d/cfn-auto-reloader.conf" : {
+                                "content": { "Fn::Join" : ["", [
+                                    "[cfn-auto-reloader-hook]\n",
+                                    "triggers=post.update\n",
+                                    "path=Resources.ECSLaunchConfig.Metadata.AWS::CloudFormation::Init\n",
+                                    "action=/opt/aws/bin/cfn-init -v ",
+                                    "         --stack ", { "Ref" : "AWS::StackName" },
+                                    "         --resource ECSLaunchConfig ",
+                                    "         --region ", { "Ref" : "AWS::Region" }, "\n",
+                                    "runas=root\n"
+                                ]]}
+                            }
+                        },
+                        "services" : {
+                            "sysvinit" : {
+                                "cfn-hup" : {
+                                    "enabled" : "true",
+                                    "ensureRunning" : "true",
+                                    "files" : [
+                                        "/etc/cfn/cfn-hup.conf",
+                                        "/etc/cfn/hooks.d/cfn-auto-reloader.conf"
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties": {
+                "ImageId" : { "Fn::FindInMap" : [ "AWSRegionArch2AMI", { "Ref" : "AWS::Region" }, "ecshvm" ] },
+                "InstanceType"   : { "Ref" : "InstanceType" },
+                "IamInstanceProfile": { "Ref": "InstanceProfile" },
+                "KeyName"        : { "Ref" : "KeyName" },
+                "UserData"       : { "Fn::Base64" : { "Fn::Join" : ["", [
+                    "#!/bin/bash -xe\n",
+                    "rpm -qa | grep aws-cfn-bootstrap > /dev/null > 2&>1\n",
+                    "if [ $? -eq 0 ]; then\n",
+                    "   yum update -y aws-cfn-bootstrap\n",
+                    "else\n",
+                    "   yum install -y aws-cfn-bootstrap\n",
+                    "fi\n",
+                    "/opt/aws/bin/cfn-init -v ",
+                    "         --stack ", { "Ref" : "AWS::StackName" },
+                    "         --resource ECSLaunchConfig ",
+                    "         --region ", { "Ref" : "AWS::Region" }, "\n",
+                    "/opt/aws/bin/cfn-signal -e $? ",
+                    "         --stack ", { "Ref" : "AWS::StackName" },
+                    "         --resource ECSAutoScalingGroup ",
+                    "         --region ", { "Ref" : "AWS::Region" }, "\n"
+                ]]}}
+            }
+        },
+        "WaitHandle":{
+            "Type":"AWS::CloudFormation::WaitConditionHandle",
+            "Properties":{}
+        }
+    },
+    "Outputs": {
+        "Region" : {
+            "Description" : "AWS Region",
+            "Value" : { "Ref" : "AWS::Region" }
+        },
+        "ECSCluster":{
+            "Description": "ECS Cluster",
+            "Value": { "Ref": "ECSCluster" }
+        },
+        "ECSLaunchConfig" :{
+            "Description":"ECS Launch Config",
+            "Value": { "Ref": "ECSLaunchConfig" }
+        },
+        "ECSAutoScalingGroup":{
+            "Description": "ECS AutoScaling Group",
+            "Value": { "Ref": "ECSAutoScalingGroup" }
+        }
+    }
+}

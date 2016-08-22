@@ -24,7 +24,7 @@
             "Type": "String",
             "Description": "DBVPCid"
         },
-        
+
         "DBRoutePublic":{
             "Type": "String",
             "Description": "DBRoutePublic"
@@ -131,7 +131,7 @@
                 }, {
                     "Key" : "Domain",
                     "Value" : {"Ref":"Domain"}
-                }]     
+                }]
             }
         },
 
